@@ -4,15 +4,14 @@
 
 // So, right now we have a directory of jobs - let's parse that.
 
-var path = require("path"),
+const path = require("path"),
     https = require("https"),
     http = require("http"),
-    schedule = require("node-schedule");
-
-var p = __dirname;
+    schedule = require("node-schedule"),
+    utils = require("../core/web/utils/utils");
 
 // Create a map from names to configurations.
-var jobs = [
+const jobs = [
   'alertDelete',
   'alertPush',
   'commDelete',
@@ -25,19 +24,19 @@ var jobs = [
   'scholarshipDelete'
 ];
 
-var mainConfig = {};
+const mainConfig = {};
 
-for (var i = 0; i < jobs.length; i++) {
-  var thisConfig = path.join(__dirname, jobs[i], 'config.js');
+for (let i = 0; i < jobs.length; i++) {
+  let thisConfig = path.join(__dirname, jobs[i], 'config.js');
   mainConfig[jobs[i]] = require(thisConfig);
 }
 
 // Now that we have all configurations, we can schedule our jobs.
 
 function runJob(key) {
-  var config = mainConfig[key];
-  var postData = JSON.stringify(config.data);
-  var options = {
+  let config = mainConfig[key];
+  let postData = JSON.stringify(config.data);
+  let options = {
     host: config.host,
     port: config.port,
     path: config.path,
@@ -51,18 +50,18 @@ function runJob(key) {
 
   if (config.secure) {
     https.request(options, function(res){
-      console.log("Running job with key:", key);
+      utils.log("info", "Running job with key: " + key + ".", {});
       res.on('data', function(data){
-        var result = data.toString("utf-8");
-        console.log("Response:", result);
+        let result = data.toString();
+        utils.log("info", "Response: " + result, {});
       });
     }).write(postData);
   } else {
-    console.log("Running job with key:", key);
+    utils.log("info", "Running job with key: " + key + ".", {});
     http.request(options, function(res){
       res.on('data', function(data){
-        var result = data.toString("utf-8");
-        console.log("Response:", result);
+        let result = data.toString();
+        utils.log("info", "Response: " + result, {});
       });
     }).write(postData);
   }
@@ -70,11 +69,11 @@ function runJob(key) {
 
 function scheduleJobs() {
   // Schedule all jobs based on our mapping.
-  var result = [];
+  let result = [];
 
   Object.keys(mainConfig).forEach(function (key) {
-    var config = mainConfig[key];
-    var j = schedule.scheduleJob(config.timing, function() {
+    let config = mainConfig[key];
+    let j = schedule.scheduleJob(config.timing, function() {
       runJob(key);
     });
     result.push(j);
@@ -90,6 +89,5 @@ if (process.argv.length > 2) {
   }
 }
 
-var jobs = scheduleJobs();
-console.log(jobs);
-console.log('Initialized all jobs!');
+var j = scheduleJobs();
+utils.log("info", "Initialized all jobs on our worker server.", {});

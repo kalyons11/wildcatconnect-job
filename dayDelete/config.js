@@ -11,7 +11,7 @@ config.secure = true;
 config.timing = {
   hour: 0,
   minute: 10,
-  dayOfWeek: [1, 2, 3, 4, 5]
-} // 12:10 AM every weekday
+  dayOfWeek: [2, 3, 4, 5, 6]
+} // 12:10 AM every weekday, but not Monday, but yes Saturday
 
 module.exports = config;
