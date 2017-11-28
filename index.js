@@ -1,23 +1,17 @@
 'use strict';
 
-// This is our main script to run jobs for the WildcatConnect application.
-
-// So, right now we have a directory of jobs - let's parse that.
-
-const path = require("path"),
-    https = require("https"),
+const https = require("https"),
     http = require("http"),
     schedule = require("node-schedule"),
     crypto = require('cryptlib'),
-    winston = require('winston');
+    winston = require('winston'),
+    _ = require('winston-loggly'); // Exposes winston.transports.Loggly
 
-require('winston-loggly');
-
-// Set up logging.
 function decrypt(string) {
   return crypto.decrypt(string, "1bf6bf65e45b55825b1919cbadd028e6", "_sbSmKUxVQAQ-hvQ");
 }
 
+// Set up logging.
 const logglyToken = decrypt("YSspFcgYs1Fv73T7o3ZEkU5EZvGMZsINhX4+kY5WjDmaxxIaIUHzpoT6KU+uph3O");
 const logglySubdomain = "wildcatconnect";
 const nodeTag = "web";
@@ -29,36 +23,65 @@ winston.add(winston.transports.Loggly, {
   json: true
 });
 
-// Create a map from names to configurations.
-const jobs = [
-  'alertDelete',
-  'alertPush',
-  'commDelete',
-  'dayDelete',
-  'dayGenerate',
-  'ECUdelete',
-  'eventDelete',
-  'newsDelete',
-  'pollDelete',
-  'scholarshipDelete'
-];
-
-const mainConfig = {};
-
-for (let i = 0; i < jobs.length; i++) {
-  let thisConfig = path.join(__dirname, jobs[i], 'config.js');
-  mainConfig[jobs[i]] = require(thisConfig);
+// Create a map from names to timing configurations.
+const jobs = {
+  'alertDelete': {
+    hour: 1,
+    minute: 0
+  },
+  'alertPush' : {
+    minute: [0, 15, 30, 45]
+  },
+  'commDelete': {
+    hour: 1,
+    minute: 5
+  },
+  'dayDelete': {
+    hour: 0,
+    minute: 10,
+    dayOfWeek: [2, 3, 4, 5, 6]
+  },
+  'dayGenerate': {
+    hour: 0,
+    minute: 5,
+    dayOfWeek: [1, 2, 3, 4, 5]
+  },
+  'ECUdelete': {
+    hour: 1,
+    minute: 10
+  },
+  'eventDelete': {
+    hour: 1,
+    minute: 20
+  },
+  'newsDelete': {
+    hour: 1,
+    minute: 25
+  },
+  'pollDelete': {
+    hour: 1,
+    minute: 35
+  },
+  'scholarshipDelete': {
+    hour: 1,
+    minute: 40
+  }
 }
 
-// Now that we have all configurations, we can schedule our jobs.
+const LOCAL = false;
+const host = LOCAL ? "localhost" : "wildcatconnect.com";
+const port = LOCAL ? 5000 : 443;
+const data = {
+  secret: decrypt("BwKVzA56kCnnn4kUXukK9w==")
+}
 
 function runJob(key) {
-  let config = mainConfig[key];
-  let postData = JSON.stringify(config.data);
+  let postData = JSON.stringify(data);
+
   let options = {
-    host: config.host,
-    port: config.port,
-    path: config.path,
+    host: host,
+    port: port,
+    path: "/job/" + key,
     method: 'POST',
     headers: {
       accept: '*/*',
@@ -68,7 +91,7 @@ function runJob(key) {
   };
 
   // Make request using proper security.
-  let method = config.secure ? https.request : http.request;
+  let method = LOCAL ? http.request : https.request;
   method(options, function(res){
     winston.log("info", "Running job with key: " + key + ".", {});
     res.on('data', function(data){
@@ -82,9 +105,9 @@ function scheduleJobs() {
   // Schedule all jobs based on our mapping.
   let result = [];
 
-  Object.keys(mainConfig).forEach(function (key) {
-    let config = mainConfig[key];
-    let j = schedule.scheduleJob(config.timing, function() {
+  Object.keys(jobs).forEach(function (key) {
+    let timing = jobs[key];
+    let j = schedule.scheduleJob(timing, function() {
       runJob(key);
     });
     result.push(j);
