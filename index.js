@@ -7,7 +7,27 @@
 const path = require("path"),
     https = require("https"),
     http = require("http"),
-    schedule = require("node-schedule");
+    schedule = require("node-schedule"),
+    crypto = require('cryptlib'),
+    winston = require('winston');
+
+require('winston-loggly');
+
+// Set up logging.
+function decrypt(string) {
+  return crypto.decrypt(string, "1bf6bf65e45b55825b1919cbadd028e6", "_sbSmKUxVQAQ-hvQ");
+}
+
+const logglyToken = decrypt("YSspFcgYs1Fv73T7o3ZEkU5EZvGMZsINhX4+kY5WjDmaxxIaIUHzpoT6KU+uph3O");
+const logglySubdomain = "wildcatconnect";
+const nodeTag = "web";
+
+winston.add(winston.transports.Loggly, {
+  token: logglyToken,
+  subdomain: logglySubdomain,
+  tags: [nodeTag],
+  json: true
+});
 
 // Create a map from names to configurations.
 const jobs = [
@@ -49,18 +69,18 @@ function runJob(key) {
 
   if (config.secure) {
     https.request(options, function(res){
-      console.log("info", "Running job with key: " + key + ".", {});
+      winston.log("info", "Running job with key: " + key + ".", {});
       res.on('data', function(data){
         let result = data.toString();
-        console.log("info", "Response: " + result, {});
+        winston.log("info", "Response: " + result, {});
       });
     }).write(postData);
   } else {
-    console.log("info", "Running job with key: " + key + ".", {});
+    winston.log("info", "Running job with key: " + key + ".", {});
     http.request(options, function(res){
       res.on('data', function(data){
         let result = data.toString();
-        console.log("info", "Response: " + result, {});
+        winston.log("info", "Response: " + result, {});
       });
     }).write(postData);
   }
@@ -89,4 +109,4 @@ if (process.argv.length > 2) {
 }
 
 var j = scheduleJobs();
-console.log("info", "Initialized all jobs on our worker server.", {});
+winston.log("info", "Initialized all jobs on our worker server.", {});
