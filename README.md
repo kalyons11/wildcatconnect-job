@@ -1,6 +1,6 @@
 # wildcatconnect-job
 
-[![Build Status](https://travis-ci.org/kalyons11/kevin.svg?branch=master)](https://travis-ci.org/kalyons11/kevin)
+[![Build Status](https://travis-ci.org/kalyons11/wildcatconnect-job.svg?branch=master)](https://travis-ci.org/kalyons11/wildcatconnect-job)
 
 Core job package for WildcatConnect application.
 
