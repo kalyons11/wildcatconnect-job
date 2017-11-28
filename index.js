@@ -7,8 +7,7 @@
 const path = require("path"),
     https = require("https"),
     http = require("http"),
-    schedule = require("node-schedule"),
-    utils = require("../core/web/utils/utils");
+    schedule = require("node-schedule");
 
 // Create a map from names to configurations.
 const jobs = [
@@ -50,18 +49,18 @@ function runJob(key) {
 
   if (config.secure) {
     https.request(options, function(res){
-      utils.log("info", "Running job with key: " + key + ".", {});
+      console.log("info", "Running job with key: " + key + ".", {});
       res.on('data', function(data){
         let result = data.toString();
-        utils.log("info", "Response: " + result, {});
+        console.log("info", "Response: " + result, {});
       });
     }).write(postData);
   } else {
-    utils.log("info", "Running job with key: " + key + ".", {});
+    console.log("info", "Running job with key: " + key + ".", {});
     http.request(options, function(res){
       res.on('data', function(data){
         let result = data.toString();
-        utils.log("info", "Response: " + result, {});
+        console.log("info", "Response: " + result, {});
       });
     }).write(postData);
   }
@@ -90,4 +89,4 @@ if (process.argv.length > 2) {
 }
 
 var j = scheduleJobs();
-utils.log("info", "Initialized all jobs on our worker server.", {});
+console.log("info", "Initialized all jobs on our worker server.", {});
