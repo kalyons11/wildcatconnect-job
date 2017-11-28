@@ -67,23 +67,15 @@ function runJob(key) {
     }
   };
 
-  if (config.secure) {
-    https.request(options, function(res){
-      winston.log("info", "Running job with key: " + key + ".", {});
-      res.on('data', function(data){
-        let result = data.toString();
-        winston.log("info", "Response: " + result, {});
-      });
-    }).write(postData);
-  } else {
+  // Make request using proper security.
+  let method = config.secure ? https.request : http.request;
+  method(options, function(res){
     winston.log("info", "Running job with key: " + key + ".", {});
-    http.request(options, function(res){
-      res.on('data', function(data){
-        let result = data.toString();
-        winston.log("info", "Response: " + result, {});
-      });
-    }).write(postData);
-  }
+    res.on('data', function(data){
+      let result = data.toString();
+      winston.log("info", "Response: " + result, {});
+    });
+  }).write(postData);
 }
 
 function scheduleJobs() {
